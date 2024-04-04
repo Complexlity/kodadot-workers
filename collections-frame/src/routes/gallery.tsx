@@ -1,5 +1,5 @@
 import { Button, Frog } from "frog";
-import { getCollection, getCollectionItems, getItem } from "../services/uniquery";
+import { getCollection, getCollectionItems, getItem, getItemByOffset } from "../services/uniquery";
 import { kodaUrl } from "../utils";
 import { $purifyOne } from "@kodadot1/minipfs";
 import { HonoEnv } from "../constants";
@@ -43,19 +43,20 @@ app.frame("/view/:chain/:id/:curr", async (c) => {
     throw new Error("The collection should have a maximum");
   }
   let max = Number(buttonValue);
-  const collectionItems = await getCollectionItems(chain, id);
 
-  let item = collectionItems[Number(curr) - 1]
+  let item = await getItemByOffset(chain, id, Number(curr)-1)
 
   if (!item) {
-    item = collectionItems[0]
+    curr = '1'
+    item = await getItemByOffset(chain, id, 0)
   }
+
 
   const image = $purifyOne(item.image, "kodadot_beta");
 
   const random = max ? Math.floor(Math.random() * max) + 1 : curr + 1;
+  console.log({random})
 
-  
 
   return c.res({
     image: image,
