@@ -1,5 +1,5 @@
 import { Button, Frog } from "frog";
-import { getCollection, getItem } from "../services/uniquery";
+import { getCollection, getCollectionItems, getItem } from "../services/uniquery";
 import { kodaUrl } from "../utils";
 import { $purifyOne } from "@kodadot1/minipfs";
 import { HonoEnv } from "../constants";
@@ -8,8 +8,12 @@ export const app = new Frog<HonoEnv>({});
 
 app.frame("/:chain/:id", async (c) => {
   const { chain, id } = c.req.param();
+
   const collection = await getCollection(chain, id);
-  console.log({ collection });
+
+  // console.log({collectionItems})
+  // console.log({ collection });
+
   const image = $purifyOne(collection.image, "kodadot_beta");
   const max = collection.max;
   const supply = collection.supply;
@@ -33,21 +37,25 @@ app.frame("/view/:chain/:id/:curr", async (c) => {
   let { chain, id, curr } = c.req.param();
   const { buttonValue } = c;
 
+
   // There is no max defined
   if (!buttonValue) {
     throw new Error("The collection should have a maximum");
   }
   let max = Number(buttonValue);
-  let item = await getItem(chain, id, curr);
+  const collectionItems = await getCollectionItems(chain, id);
+
+  let item = collectionItems[Number(curr) - 1]
 
   if (!item) {
-    curr = "1";
-    item = await getItem(chain, id, curr);
+    item = collectionItems[0]
   }
 
   const image = $purifyOne(item.image, "kodadot_beta");
 
   const random = max ? Math.floor(Math.random() * max) + 1 : curr + 1;
+
+  
 
   return c.res({
     image: image,
