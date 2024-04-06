@@ -1,20 +1,15 @@
-import { Button, Frog } from "frog";
-import { getCollection, getCollectionItems, getItem, getItemByOffset } from "../services/uniquery";
-import { kodaUrl } from "../utils";
 import { $purifyOne } from "@kodadot1/minipfs";
+import { Button, Frog } from "frog";
 import { HonoEnv } from "../constants";
+import { getCollection, getItemByOffset } from "../services/uniquery";
+import { kodaUrl } from "../utils";
 
 export const app = new Frog<HonoEnv>({});
 
 app.frame("/:chain/:id", async (c) => {
   const { chain, id } = c.req.param();
 
-  const [collection, firstItemInCollection] = await Promise.all([getCollection(chain, id), getItemByOffset(chain, id, 0)]);
-  console.log({firstItemInCollection})
-  const firstItemId = firstItemInCollection.id.split('-')[1]
-  
-
-
+  const collection = await getCollection(chain, id);
   const image = $purifyOne(collection.image, "kodadot_beta");
   const max = collection.max;
   const supply = collection.supply;
@@ -26,7 +21,7 @@ app.frame("/:chain/:id", async (c) => {
     image,
     imageAspectRatio: "1:1",
     intents: [
-      <Button action={`/view/${chain}/${id}/${firstItemId}`} value={supply}>
+      <Button action={`/view/${chain}/${id}/1`} value={supply}>
         {label}
       </Button>,
     ],
@@ -38,26 +33,25 @@ app.frame("/view/:chain/:id/:curr", async (c) => {
   let { chain, id, curr } = c.req.param();
   const { buttonValue } = c;
 
-
   // There is no max defined
   if (!buttonValue) {
     throw new Error("The collection should have a maximum");
   }
   let max = Number(buttonValue);
-
-  let item = await getItemByOffset(chain, id, Number(curr)-1)
+  let item = await getItemByOffset(chain, id, Number(curr) - 1);
 
   if (!item) {
-    curr = '1'
-    item = await getItemByOffset(chain, id, 0)
+    curr = "1";
+    item = await getItemByOffset(chain, id, 0);
   }
 
+
+  const itemId = item.id.split("-")[1]
+  console.log({itemId})
 
   const image = $purifyOne(item.image, "kodadot_beta");
 
   const random = max ? Math.floor(Math.random() * max) + 1 : curr + 1;
-  console.log({random})
-
 
   return c.res({
     image: image,
@@ -84,9 +78,9 @@ app.frame("/view/:chain/:id/:curr", async (c) => {
         {" "}
         ↻{" "}
       </Button>,
-      <Button.Link href={kodaUrl(chain, id, curr)}>View</Button.Link>,
+      <Button.Link href={kodaUrl(chain, id, itemId)}>View</Button.Link>,
     ],
-    browserLocation: kodaUrl(chain, id, curr),
+    browserLocation: kodaUrl(chain, id, itemId),
   });
 });
 
